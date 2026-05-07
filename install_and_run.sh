@@ -17,7 +17,7 @@ echo "✓ Python: $(python3 --version)"
 # Install dependencies
 echo ""
 echo "Installing dependencies..."
-pip3 install --quiet --upgrade openai pyaudio websockets pyperclip
+pip3 install --quiet --upgrade openai-whisper pyaudio websockets pyperclip
 
 echo "✓ Dependencies installed"
 echo ""

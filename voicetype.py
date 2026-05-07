@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-VoiceType — voice dictation for macOS using faster-whisper (local, no API key required)
-Dependencies: pip install faster-whisper openai pyaudio websockets pyperclip
+VoiceType — voice dictation for macOS using openai-whisper (local, no API key required)
+Dependencies: pip install openai-whisper pyaudio websockets pyperclip
 """
 
 import asyncio
@@ -22,10 +22,10 @@ try:
     import pyaudio
     import websockets
     import pyperclip
-    from faster_whisper import WhisperModel
+    import whisper as _whisper_lib
 except ImportError as e:
     print(f"Error: missing dependency — {e}")
-    print("Install with: pip install faster-whisper pyaudio websockets pyperclip")
+    print("Install with: pip install openai-whisper pyaudio websockets pyperclip")
     sys.exit(1)
 
 try:
@@ -51,13 +51,13 @@ HTML_FILE          = Path(__file__).parent / "index.html"
 history: list[dict] = []
 
 # Lazily loaded Whisper model
-_whisper_model: "WhisperModel | None" = None
+_whisper_model = None
 
-def _get_whisper_model() -> "WhisperModel":
+def _get_whisper_model():
     global _whisper_model
     if _whisper_model is None:
         print(f"  Loading Whisper model '{WHISPER_MODEL_SIZE}' (first run may download it)...")
-        _whisper_model = WhisperModel(WHISPER_MODEL_SIZE, device="cpu", compute_type="int8")
+        _whisper_model = _whisper_lib.load_model(WHISPER_MODEL_SIZE)
         print("  Model ready.")
     return _whisper_model
 
@@ -115,17 +115,16 @@ recorder = AudioRecorder()
 # ─── Whisper ──────────────────────────────────────────────────────────────────
 
 async def transcribe(wav_path: str, language: str = "auto") -> str:
-    """Transcribes audio locally using faster-whisper."""
+    """Transcribes audio locally using openai-whisper."""
     model = _get_whisper_model()
     kwargs = {} if language == "auto" else {"language": language}
 
     loop = asyncio.get_event_loop()
-    segments, _ = await loop.run_in_executor(
+    result = await loop.run_in_executor(
         None, lambda: model.transcribe(wav_path, **kwargs)
     )
-    text = " ".join(seg.text.strip() for seg in segments)
     os.unlink(wav_path)
-    return text.strip()
+    return result["text"].strip()
 
 
 async def ai_edit(text: str, instruction: str) -> str:
