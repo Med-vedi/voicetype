@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git init *)"
+      "Bash(git init *)",
+      "Bash(git -C /Users/desmo_papa/Downloads/voicetype status)",
+      "Bash(gh auth *)",
+      "Bash(git add *)"
     ]
   }
 }
