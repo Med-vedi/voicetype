@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-VoiceType — voice dictation for macOS using OpenAI Whisper
-Dependencies: pip install openai pyaudio websockets pyperclip
+VoiceType — voice dictation for macOS using faster-whisper (local, no API key required)
+Dependencies: pip install faster-whisper openai pyaudio websockets pyperclip
 """
 
 import asyncio
@@ -21,12 +21,18 @@ from datetime import datetime
 try:
     import pyaudio
     import websockets
-    import openai
     import pyperclip
+    from faster_whisper import WhisperModel
 except ImportError as e:
     print(f"Error: missing dependency — {e}")
-    print("Install with: pip install openai pyaudio websockets pyperclip")
+    print("Install with: pip install faster-whisper pyaudio websockets pyperclip")
     sys.exit(1)
+
+try:
+    import openai  # type: ignore[import-untyped]
+    _openai_available = True
+except ImportError:
+    _openai_available = False
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -37,11 +43,23 @@ SAMPLE_RATE    = 16000
 CHANNELS       = 1
 CHUNK          = 1024
 FORMAT         = pyaudio.paInt16
-RECORD_SECONDS = 30          # maximum recording length
-HTML_FILE      = Path(__file__).parent / "index.html"
+RECORD_SECONDS     = 30      # maximum recording length
+WHISPER_MODEL_SIZE = "base"  # tiny | base | small | medium | large-v2
+HTML_FILE          = Path(__file__).parent / "index.html"
 
 # Session history (max 50 entries)
 history: list[dict] = []
+
+# Lazily loaded Whisper model
+_whisper_model: "WhisperModel | None" = None
+
+def _get_whisper_model() -> "WhisperModel":
+    global _whisper_model
+    if _whisper_model is None:
+        print(f"  Loading Whisper model '{WHISPER_MODEL_SIZE}' (first run may download it)...")
+        _whisper_model = WhisperModel(WHISPER_MODEL_SIZE, device="cpu", compute_type="int8")
+        print("  Model ready.")
+    return _whisper_model
 
 # ─── Audio ────────────────────────────────────────────────────────────────────
 
@@ -97,25 +115,22 @@ recorder = AudioRecorder()
 # ─── Whisper ──────────────────────────────────────────────────────────────────
 
 async def transcribe(wav_path: str, language: str = "auto") -> str:
-    """Sends audio to Whisper and returns the transcribed text."""
-    if not OPENAI_API_KEY:
-        return "❌ OPENAI_API_KEY is not set. Enter your key in Settings."
+    """Transcribes audio locally using faster-whisper."""
+    model = _get_whisper_model()
+    kwargs = {} if language == "auto" else {"language": language}
 
-    client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
-    kwargs = {"model": "whisper-1", "response_format": "text"}
-    if language != "auto":
-        kwargs["language"] = language
-
-    with open(wav_path, "rb") as f:
-        result = await client.audio.transcriptions.create(file=f, **kwargs)
-
+    loop = asyncio.get_event_loop()
+    segments, _ = await loop.run_in_executor(
+        None, lambda: model.transcribe(wav_path, **kwargs)
+    )
+    text = " ".join(seg.text.strip() for seg in segments)
     os.unlink(wav_path)
-    return str(result).strip()
+    return text.strip()
 
 
 async def ai_edit(text: str, instruction: str) -> str:
-    """Edits text via GPT-4o based on a voice instruction."""
-    if not OPENAI_API_KEY:
+    """Edits text via GPT-4o based on a voice instruction (requires OPENAI_API_KEY)."""
+    if not OPENAI_API_KEY or not _openai_available:
         return text
 
     client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
@@ -257,7 +272,7 @@ class SilentHTTPHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *_):
         pass
 
-    def translate_path(self, path):
+    def translate_path(self, _):
         # always serve index.html from the script directory
         return str(HTML_FILE)
 
@@ -275,8 +290,8 @@ if __name__ == "__main__":
     print("─" * 46)
 
     if not OPENAI_API_KEY:
-        print("⚠  OPENAI_API_KEY is not set.")
-        print("   Set it in the interface or via an environment variable.")
+        print("ℹ  No OPENAI_API_KEY — transcription works locally.")
+        print("   Set it only if you want to use the AI Edit feature.")
 
     # Start HTTP in a background thread
     threading.Thread(target=start_http, daemon=True).start()
