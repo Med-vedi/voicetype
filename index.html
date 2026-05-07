@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoiceType</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0e0e10;
+  --bg2:      #17171a;
+  --bg3:      #1f1f23;
+  --border:   rgba(255,255,255,0.08);
+  --border2:  rgba(255,255,255,0.14);
+  --text:     #f0f0f2;
+  --muted:    #7a7a85;
+  --accent:   #e24b4a;
+  --accent2:  #ff7171;
+  --green:    #57c78a;
+  --amber:    #f0a830;
+  --blue:     #5599ff;
+  --radius:   12px;
+  --radius-sm: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Manrope', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── Sidebar ──────────────────────────────── */
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 12px;
+  gap: 2px;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 10px 18px;
+}
+.logo-icon {
+  width: 28px; height: 28px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-icon svg { width: 16px; height: 16px; fill: white; }
+.logo-text { font-weight: 600; font-size: 15px; letter-spacing: -0.02em; }
+.logo-text span { color: var(--accent2); }
+
+.sec-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  padding: 12px 10px 6px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active {
+  background: var(--bg3);
+  color: var(--text);
+  border-color: var(--border);
+  font-weight: 500;
+}
+.nav-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+.history-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.history-list::-webkit-scrollbar { width: 3px; }
+.history-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.hist-item {
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1.4;
+}
+.hist-item:hover { background: var(--bg3); color: var(--text); }
+.hist-time { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+.hist-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+.sidebar-bottom { padding-top: 12px; border-top: 1px solid var(--border); }
+
+/* ── Main ─────────────────────────────────── */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.topbar-mode {
+  display: flex; gap: 4px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+}
+.mode-btn {
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s;
+  border: none; background: none;
+  font-family: 'Manrope', sans-serif;
+}
+.mode-btn.active { background: var(--bg3); color: var(--text); }
+
+.topbar-right { display: flex; gap: 8px; align-items: center; }
+.lang-select {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  font-family: 'Manrope', sans-serif;
+  cursor: pointer;
+}
+.icon-btn {
+  width: 32px; height: 32px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.15s;
+}
+.icon-btn:hover { border-color: var(--border2); }
+.icon-btn svg { width: 15px; height: 15px; }
+
+/* ── Content ──────────────────────────────── */
+.content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* PANEL: dictate */
+#panel-dictate {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 32px 24px;
+  gap: 24px;
+  overflow-y: auto;
+}
+
+.mic-container { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+
+.mic-outer {
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.25s;
+}
+.mic-outer::before {
+  content: '';
+  position: absolute; inset: -6px;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  transition: all 0.3s;
+}
+.mic-outer.idle { background: var(--bg3); border: 1px solid var(--border2); }
+.mic-outer.idle:hover { border-color: rgba(255,255,255,0.25); transform: scale(1.04); }
+.mic-outer.recording {
+  background: rgba(226,75,74,0.12);
+  border: 1.5px solid var(--accent);
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+@keyframes pulse-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(226,75,74,0.3); }
+  50%       { box-shadow: 0 0 0 14px rgba(226,75,74,0); }
+}
+.mic-outer.loading { background: rgba(85,153,255,0.1); border: 1.5px solid var(--blue); }
+.mic-svg { width: 36px; height: 36px; }
+.mic-svg path { transition: fill 0.2s; }
+.idle .mic-svg path { fill: var(--muted); }
+.recording .mic-svg path { fill: var(--accent2); }
+.loading .mic-svg path { fill: var(--blue); }
+
+.mic-label { font-size: 13px; color: var(--muted); }
+.mic-label.recording-label { color: var(--accent2); font-weight: 500; }
+.mic-label.loading-label { color: var(--blue); }
+
+.shortcut {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+kbd {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+
+/* Waveform */
+.wave { display: none; align-items: center; gap: 4px; height: 32px; }
+.wave.visible { display: flex; }
+.wave-bar {
+  width: 3px; border-radius: 2px;
+  background: var(--accent);
+  animation: wave-anim 0.9s ease-in-out infinite;
+}
+.wave-bar:nth-child(1) { height: 8px;  animation-delay: 0s; }
+.wave-bar:nth-child(2) { height: 22px; animation-delay: 0.12s; }
+.wave-bar:nth-child(3) { height: 28px; animation-delay: 0.24s; }
+.wave-bar:nth-child(4) { height: 16px; animation-delay: 0.18s; }
+.wave-bar:nth-child(5) { height: 24px; animation-delay: 0.06s; }
+.wave-bar:nth-child(6) { height: 10px; animation-delay: 0.3s; }
+@keyframes wave-anim {
+  0%, 100% { transform: scaleY(0.35); opacity: 0.5; }
+  50%       { transform: scaleY(1);    opacity: 1; }
+}
+
+/* Transcript */
+.transcript-area { width: 100%; max-width: 680px; }
+.ta-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px;
+}
+.ta-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+.ta-actions { display: flex; gap: 6px; }
+.ta-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 10px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11.5px;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: 'Manrope', sans-serif;
+  transition: all 0.15s;
+}
+.ta-btn:hover { border-color: var(--border2); color: var(--text); }
+.ta-btn.primary { background: var(--accent); border-color: var(--accent); color: white; font-weight: 500; }
+.ta-btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+.ta-btn svg { width: 13px; height: 13px; }
+
+textarea#transcript {
+  width: 100%;
+  min-height: 140px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: 'Manrope', sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  padding: 14px 16px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+textarea#transcript:focus { border-color: var(--border2); }
+textarea#transcript::placeholder { color: var(--muted); }
+
+/* AI edit input */
+.ai-row {
+  display: flex; gap: 8px;
+  width: 100%; max-width: 680px;
+}
+.ai-input {
+  flex: 1;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  padding: 9px 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.ai-input:focus { border-color: var(--border2); }
+.ai-input::placeholder { color: var(--muted); }
+
+/* Status bar */
+.statusbar {
+  padding: 8px 24px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.status-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  margin-right: 6px;
+}
+.status-dot.red { background: var(--accent); }
+.status-dot.blue { background: var(--blue); }
+
+/* PANEL: commands */
+#panel-commands {
+  flex: 1; padding: 32px;
+  overflow-y: auto; display: none;
+}
+#panel-commands.visible { display: block; }
+.cmd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.cmd-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cmd-card:hover { border-color: var(--border2); background: var(--bg3); }
+.cmd-category { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+.cmd-text { font-size: 13px; font-weight: 500; }
+.cmd-hint { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+
+/* PANEL: settings */
+#panel-settings {
+  flex: 1; padding: 32px;
+  overflow-y: auto; display: none;
+  max-width: 560px;
+}
+#panel-settings.visible { display: block; }
+.setting-group { margin-bottom: 28px; }
+.setting-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.setting-label { font-size: 13px; color: var(--muted); }
+.setting-input {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 7px 12px;
+  width: 280px;
+  outline: none;
+}
+.setting-input:focus { border-color: var(--border2); }
+.save-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 20px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+  font-family: 'Manrope', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.save-btn:hover { background: var(--accent2); }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 10px 20px;
+  font-size: 13px;
+  color: var(--text);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 99;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-1.5 4v7a1.5 1.5 0 0 0 3 0V5a1.5 1.5 0 0 0-3 0zM5 11a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 1 1 2 0 8 8 0 0 1-7 7.93V22h3a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2h3v-2.07A8 8 0 0 1 4 12a1 1 0 0 1 1-1z"/></svg>
+    </div>
+    <span class="logo-text">Voice<span>Type</span></span>
+  </div>
+
+  <div class="sec-label">Mode</div>
+  <div class="nav-item active" onclick="showPanel('dictate', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    Dictate
+  </div>
+  <div class="nav-item" onclick="showPanel('commands', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6H5a2 2 0 0 0-2 2v3m5-5h8m-8 0V4m8 2h3a2 2 0 0 1 2 2v3m-5-5V4M3 11v5a2 2 0 0 0 2 2h3m-5-7h18m0 0v5a2 2 0 0 1-2 2h-3m-8 0h8m-8 0v2m8-2v2"/></svg>
+    Commands
+  </div>
+  <div class="nav-item" onclick="showPanel('settings', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    Settings
+  </div>
+
+  <div class="sec-label" style="margin-top: 8px;">History</div>
+  <div class="history-list" id="historyList">
+    <div style="font-size: 12px; color: var(--muted); padding: 6px 10px;">No entries</div>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="nav-item" onclick="clearHistory()" style="color: var(--muted);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:15px;height:15px;"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+      Clear history
+    </div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-mode">
+      <button class="mode-btn active" id="modeDict" onclick="setMode('dictate')">Dictate</button>
+      <button class="mode-btn" id="modeEdit" onclick="setMode('edit')">AI Edit</button>
+    </div>
+    <div class="topbar-right">
+      <select class="lang-select" id="langSelect">
+        <option value="auto">🌐 Auto</option>
+        <option value="en">🇺🇸 English</option>
+        <option value="ru">🇷🇺 Russian</option>
+        <option value="it">🇮🇹 Italiano</option>
+        <option value="de">🇩🇪 Deutsch</option>
+        <option value="fr">🇫🇷 Français</option>
+        <option value="es">🇪🇸 Español</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Panel: Dictate -->
+  <div class="content" id="panel-dictate">
+
+    <div class="mic-container">
+      <div class="mic-outer idle" id="micBtn" onclick="toggleRecord()" title="Click to record (⌥ Space)">
+        <svg class="mic-svg" viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-1.5 4v7a1.5 1.5 0 0 0 3 0V5a1.5 1.5 0 0 0-3 0zM5 11a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 1 1 2 0 8 8 0 0 1-7 7.93V22h3a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2h3v-2.07A8 8 0 0 1 4 12a1 1 0 0 1 1-1z"/></svg>
+      </div>
+      <div class="mic-label" id="micLabel">Click to record</div>
+      <div class="shortcut">
+        Shortcut: <kbd>⌥</kbd> + <kbd>Space</kbd>
+      </div>
+      <div class="wave" id="waveform">
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+      </div>
+    </div>
+
+    <!-- Transcript -->
+    <div class="transcript-area">
+      <div class="ta-header">
+        <span class="ta-label">Transcript</span>
+        <div class="ta-actions">
+          <button class="ta-btn" onclick="clearTranscript()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+            Clear
+          </button>
+          <button class="ta-btn" onclick="copyTranscript()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy
+          </button>
+          <button class="ta-btn primary" onclick="pasteToApp()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 0 2-2h2a2 2 0 0 0 2 2"/></svg>
+            Paste
+          </button>
+        </div>
+      </div>
+      <textarea id="transcript" placeholder="Click the microphone button and start speaking..."></textarea>
+    </div>
+
+    <!-- AI Edit row (shows when in edit mode) -->
+    <div class="ai-row" id="aiRow" style="display:none;">
+      <input class="ai-input" id="aiInstruction" placeholder='Instruction: "make it shorter", "remove filler words", "translate to Spanish"…'>
+      <button class="ta-btn primary" onclick="applyAIEdit()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Apply
+      </button>
+    </div>
+
+  </div><!-- /panel-dictate -->
+
+  <!-- Panel: Commands -->
+  <div class="content" id="panel-commands" style="display:none; align-items:flex-start;">
+    <div style="width:100%;">
+      <div style="font-size:13px; color:var(--muted); margin-bottom:16px;">
+        Say one of these commands after stopping dictation, or start recording and say the command.
+      </div>
+      <div class="cmd-grid" id="cmdGrid"></div>
+    </div>
+  </div>
+
+  <!-- Panel: Settings -->
+  <div class="content" id="panel-settings" style="display:none; align-items:flex-start;">
+    <div style="width:100%; max-width:520px;">
+      <div class="setting-group">
+        <div class="setting-title">OpenAI API Key</div>
+        <div class="setting-row">
+          <span class="setting-label">sk-...</span>
+          <input class="setting-input" type="password" id="apiKeyInput" placeholder="sk-proj-...">
+        </div>
+        <button class="save-btn" onclick="saveKey()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+          Save
+        </button>
+      </div>
+      <div class="setting-group">
+        <div class="setting-title">About</div>
+        <div style="font-size:13px; color:var(--muted); line-height:1.7;">
+          VoiceType runs a local server on ports <code style="font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg3);padding:1px 5px;border-radius:4px;">8765</code> and <code style="font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg3);padding:1px 5px;border-radius:4px;">8766</code>.<br>
+          Audio is sent to the Whisper API and is never stored locally.<br>
+          Your API key is kept only for the current session.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="statusbar">
+    <div id="statusLeft"><span class="status-dot" id="statusDot"></span><span id="statusText">Ready</span></div>
+    <div id="charCounter">0 characters</div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const WS_URL = 'ws://localhost:8766';
+let ws = null;
+let recording = false;
+let connected = false;
+
+// ── WebSocket ────────────────────────────────────────────────────────────────
+
+function connect() {
+  ws = new WebSocket(WS_URL);
+  ws.onopen  = () => { connected = true;  setStatus('Connected', 'green'); };
+  ws.onclose = () => { connected = false; setStatus('Disconnected — run voicetype.py', 'red'); setTimeout(connect, 3000); };
+  ws.onerror = () => {};
+  ws.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'recording_started') { /* handled locally */ }
+    else if (msg.type === 'transcribing')  { setMicState('loading'); }
+    else if (msg.type === 'transcript') {
+      setMicState('idle');
+      const ta = document.getElementById('transcript');
+      ta.value = ta.value ? ta.value + ' ' + msg.text : msg.text;
+      updateCharCount();
+      addHistory(msg.entry);
+      toast('Transcribed ✓');
+    }
+    else if (msg.type === 'pasted')    { toast('Pasted into app ✓'); }
+    else if (msg.type === 'edited')    { document.getElementById('transcript').value = msg.text; updateCharCount(); toast('Text updated ✓'); }
+    else if (msg.type === 'command_result') { toast(msg.message); }
+    else if (msg.type === 'key_saved') { toast('API key saved ✓'); }
+    else if (msg.type === 'history')   { renderHistory(msg.items); }
+    else if (msg.type === 'history_cleared') { renderHistory([]); toast('History cleared'); }
+  };
+}
+
+function send(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+  else toast('⚠ No connection to server');
+}
+
+// ── Recording ────────────────────────────────────────────────────────────────
+
+function toggleRecord() {
+  if (!recording) startRecord(); else stopRecord();
+}
+
+function startRecord() {
+  recording = true;
+  setMicState('recording');
+  send({ type: 'start' });
+}
+
+function stopRecord() {
+  recording = false;
+  send({ type: 'stop', language: document.getElementById('langSelect').value });
+}
+
+function setMicState(state) {
+  const btn   = document.getElementById('micBtn');
+  const label = document.getElementById('micLabel');
+  const wave  = document.getElementById('waveform');
+  btn.className = 'mic-outer ' + state;
+  wave.className = state === 'recording' ? 'wave visible' : 'wave';
+  if (state === 'idle')      { label.textContent = 'Click to record'; label.className = 'mic-label'; }
+  if (state === 'recording') { label.textContent = '● Recording...'; label.className = 'mic-label recording-label'; }
+  if (state === 'loading')   { label.textContent = 'Processing...'; label.className = 'mic-label loading-label'; }
+}
+
+// ── Keyboard shortcut ────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.altKey && e.code === 'Space') { e.preventDefault(); toggleRecord(); }
+});
+
+// ── Mode ─────────────────────────────────────────────────────────────────────
+
+function setMode(mode) {
+  const aiRow = document.getElementById('aiRow');
+  document.getElementById('modeDict').classList.toggle('active', mode === 'dictate');
+  document.getElementById('modeEdit').classList.toggle('active', mode === 'edit');
+  aiRow.style.display = mode === 'edit' ? 'flex' : 'none';
+}
+
+function applyAIEdit() {
+  const text = document.getElementById('transcript').value.trim();
+  const instr = document.getElementById('aiInstruction').value.trim();
+  if (!text) return toast('Enter some text first');
+  if (!instr) return toast('Enter an instruction');
+  send({ type: 'edit', text, instruction: instr });
+}
+
+// ── Transcript ───────────────────────────────────────────────────────────────
+
+function clearTranscript() {
+  document.getElementById('transcript').value = '';
+  updateCharCount();
+}
+
+function copyTranscript() {
+  const t = document.getElementById('transcript').value;
+  if (!t) return toast('Nothing to copy');
+  navigator.clipboard.writeText(t).then(() => toast('Copied ✓'));
+}
+
+function pasteToApp() {
+  const t = document.getElementById('transcript').value.trim();
+  if (!t) return toast('Nothing to paste');
+  send({ type: 'paste', text: t });
+}
+
+function updateCharCount() {
+  const len = document.getElementById('transcript').value.length;
+  document.getElementById('charCounter').textContent = len + ' characters';
+}
+document.getElementById('transcript').addEventListener('input', updateCharCount);
+
+// ── Navigation ───────────────────────────────────────────────────────────────
+
+function showPanel(name, el) {
+  ['dictate','commands','settings'].forEach(p => {
+    document.getElementById('panel-' + p).style.display = 'none';
+  });
+  document.getElementById('panel-' + name).style.display = 'flex';
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+
+// ── Commands ──────────────────────────────────────────────────────────────────
+
+const COMMANDS = [
+  { cat: 'Browser',       text: 'Open browser',      hint: 'Safari' },
+  { cat: 'Browser',       text: 'Open Chrome',        hint: 'Google Chrome' },
+  { cat: 'Browser',       text: 'Open Firefox',       hint: 'Firefox' },
+  { cat: 'Apps',          text: 'Open Terminal',      hint: 'macOS Terminal' },
+  { cat: 'Apps',          text: 'Open Finder',        hint: 'File manager' },
+  { cat: 'Apps',          text: 'Open Notes',         hint: 'Apple Notes' },
+  { cat: 'Apps',          text: 'Open Telegram',      hint: 'Telegram' },
+  { cat: 'Apps',          text: 'Open VSCode',        hint: 'Visual Studio Code' },
+  { cat: 'Apps',          text: 'Open Mail',          hint: 'Apple Mail' },
+  { cat: 'Apps',          text: 'Open Slack',         hint: 'Slack' },
+  { cat: 'System',        text: 'Volume up',          hint: 'Increase volume' },
+  { cat: 'System',        text: 'Volume down',        hint: 'Decrease volume' },
+  { cat: 'System',        text: 'Mute',               hint: 'Mute audio' },
+  { cat: 'System',        text: 'Take screenshot',    hint: 'Saves to Desktop' },
+  { cat: 'System',        text: 'Lock screen',        hint: 'Turn off display' },
+];
+
+function renderCommandCards() {
+  const grid = document.getElementById('cmdGrid');
+  grid.innerHTML = COMMANDS.map(c => `
+    <div class="cmd-card" onclick="runCommand('${c.text}')">
+      <div class="cmd-category">${c.cat}</div>
+      <div class="cmd-text">${c.text}</div>
+      <div class="cmd-hint">${c.hint}</div>
+    </div>
+  `).join('');
+}
+
+function runCommand(text) {
+  send({ type: 'command', text });
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+
+function addHistory(entry) {
+  const list = document.getElementById('historyList');
+  const empty = list.querySelector('[style]');
+  if (empty) empty.remove();
+  const el = document.createElement('div');
+  el.className = 'hist-item';
+  el.onclick = () => { document.getElementById('transcript').value = entry.text; showPanel('dictate'); updateCharCount(); };
+  el.innerHTML = `<div class="hist-time">${entry.time}</div><div class="hist-text">${entry.text}</div>`;
+  list.prepend(el);
+}
+
+function renderHistory(items) {
+  const list = document.getElementById('historyList');
+  list.innerHTML = items.length ? '' : '<div style="font-size:12px;color:var(--muted);padding:6px 10px;">No entries</div>';
+  items.forEach(addHistory);
+}
+
+function clearHistory() {
+  send({ type: 'clear_history' });
+}
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+
+function saveKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) return toast('Enter an API key');
+  send({ type: 'set_key', key });
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+function setStatus(text, color) {
+  document.getElementById('statusText').textContent = text;
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot' + (color === 'red' ? ' red' : color === 'blue' ? ' blue' : '');
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+renderCommandCards();
+connect();
+send({ type: 'get_history' });
+</script>
+</body>
+</html>
