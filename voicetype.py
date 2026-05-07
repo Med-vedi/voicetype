@@ -4,6 +4,8 @@ VoiceType — voice dictation for macOS using openai-whisper (local, no API key 
 Dependencies: pip install openai-whisper pyaudio websockets pyperclip
 """
 
+from __future__ import annotations
+
 import asyncio
 import json
 import os
