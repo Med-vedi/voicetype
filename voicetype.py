@@ -288,10 +288,6 @@ if __name__ == "__main__":
     print("  VoiceType — voice dictation for macOS")
     print("─" * 46)
 
-    if not OPENAI_API_KEY:
-        print("ℹ  No OPENAI_API_KEY — transcription works locally.")
-        print("   Set it only if you want to use the AI Edit feature.")
-
     # Start HTTP in a background thread
     threading.Thread(target=start_http, daemon=True).start()
 

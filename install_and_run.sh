@@ -14,21 +14,22 @@ fi
 
 echo "✓ Python: $(python3 --version)"
 
-# Install dependencies
+# Upgrade pip first so it can resolve modern wheels
 echo ""
-echo "Installing dependencies..."
+echo "Upgrading pip..."
+python3 -m pip install --quiet --upgrade pip
+
+# Install PyTorch from the official CPU index (avoids resolver issues)
+echo "Installing PyTorch (CPU)..."
+pip3 install --quiet torch --index-url https://download.pytorch.org/whl/cpu
+
+# Install remaining dependencies
+echo "Installing remaining dependencies..."
 pip3 install --quiet --upgrade openai-whisper pyaudio websockets pyperclip
 
 echo "✓ Dependencies installed"
 echo ""
 
-# Check API key
-if [ -z "$OPENAI_API_KEY" ]; then
-  echo "⚠  OPENAI_API_KEY is not set."
-  echo "   Option 1: export OPENAI_API_KEY=sk-..."
-  echo "   Option 2: enter the key in the interface (Settings)"
-  echo ""
-fi
 
 echo "────────────────────────────────────────────"
 echo "  Starting VoiceType..."
